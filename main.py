@@ -12,7 +12,7 @@ def read_png(filepath):
     :return: rows: lines
     :return: width: int
     :return: height: int
-    :return: red_pixels: list
+    :return: pixels: list
     '''
     dimensionPic = png.Reader(filename = filepath).asRGBA8()
     width = dimensionPic[0]
@@ -30,8 +30,8 @@ def read_png(filepath):
 def pix_reduction (pixlist):
     """
     convert the color level of odd pixels to even
-    :param red: list
-    :return red: list
+    :param pixlist: list
+    :return pixlist: list
 
     """
     for i in range(len(pixlist)):
@@ -60,9 +60,9 @@ def convert_text_to_Bin(text):
 def encode(rgbaEncoded, textbin):
     '''
     Encode by adding binary text to the least significant bits
-    :param redcolor: list
+    :param rgbaEncoded: list
     :param textbin: list
-    :return redcolor: list
+    :return rgbaEncoded: list
     '''
     binary = ''
     for i in textbin:
@@ -75,7 +75,7 @@ def encode(rgbaEncoded, textbin):
 
 def insert_pixels(w, h, rgba, pic):
     '''
-    Insert the red pixel encoded to the red pixel of picture
+    Insert the pixel encoded to the pixel of picture
     :param w: int
     :param h: int
     :param rgba: list
