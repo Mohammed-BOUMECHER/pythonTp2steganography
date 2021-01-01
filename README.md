@@ -18,7 +18,7 @@ $  python3 main.py -w image.png
         $ Set PNG path: imageTest.png
         $ Enter your text: Maissem
 
---Mode read:
+- Mode read:
 
 ```console 
     python3 main.py image.png
