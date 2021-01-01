@@ -1,7 +1,8 @@
+# https://www.mathweb.fr/euclide/2020/06/13/steganographie-python/?fbclid=IwAR1ERFRz7IONVvriju5UvWyfGq9pFfo7qCA927XLXU3BURV59E9EyIOQ-rw
 import sys
-sys.path.append('pypng-lib\code')
+sys.path.append('pypng-lib/code')
 import png
-
+import argparse
 
 # RGB recovery
 def read_png(filepath):
@@ -17,26 +18,26 @@ def read_png(filepath):
     width = dimensionPic[0]
     height = dimensionPic[1]
     rows = list(dimensionPic[2])
-    red_pixels = []
+    pixels = []
     rowsList = rows
     for i in rowsList:
-        for red in range(0, len(i), 4):
-            red_pixels.append(i[red])
-    return rows, width, height, red_pixels
+        for j in range(0, len(i)):
+            pixels.append(i[j])
+    return rows, width, height, pixels
 
 
 
-def pix_reduction (red):
+def pix_reduction (pixlist):
     """
-    convert red color level to odd to even
+    convert the color level of odd pixels to even
     :param red: list
     :return red: list
 
     """
-    for i in range(len(red)):
-        if (red[i] % 2 != 0):
-            red[i] = red[i] - 1
-    return red
+    for i in range(len(pixlist)):
+        if (pixlist[i] % 2 != 0):
+            pixlist[i] = pixlist[i] - 1
+    return pixlist
 
 
 
@@ -56,79 +57,59 @@ def convert_text_to_Bin(text):
 
 
 
-def encode(redcolor, textbin):
+def encode(rgbaEncoded, textbin):
     '''
-    Insert text encoded to the red pixel
+    Encode by adding binary text to the least significant bits
     :param redcolor: list
     :param textbin: list
     :return redcolor: list
     '''
-    bi = ''
+    binary = ''
     for i in textbin:
         for k in i:
-            bi = bi + k
-    for j in range(0 , len(bi)):
-        redcolor[j] = redcolor[j] + int(bi[j])
-    return redcolor
+            binary = binary + k
+    for j in range(0 , len(binary)):
+        rgbaEncoded[j] = rgbaEncoded[j] + int(binary[j])
+    return rgbaEncoded
 
 
-
-def adapt_rows(rgba_rows):
-    """
-    adapt rgba as list of tuple
-    :param rgb_rows: list
-    :return rgb_pixels_list: list
-    """
-
-    rgba_pixels_list = []
-    for row in rgba_rows:
-        rgba_pixels = tuple(row)
-        rgba_pixels_list.append(rgba_pixels)
-    return rgba_pixels_list
-
-
-
-def insert_red_pixels(w, h, red_list, rows):
+def insert_pixels(w, h, rgba, pic):
     '''
     Insert the red pixel encoded to the red pixel of picture
     :param w: int
     :param h: int
-    :param red_list:
-    :param rows: list of tuple
+    :param rgba: list
+    :param pic:
     '''
-    tupleIndice = 0 #ele de tuple
-    elementTuple = 0 #ele de list
-    i = 0
-    while i < h:
-        tmp = 0
-        l = list(rows[tupleIndice])   #convert tuple to list in order to edit it
-        for j in range(0, w):
-            l[tmp] = red_list[elementTuple] # edit the red value
-            tmp = tmp + 4 # index of red pixels
-            elementTuple = elementTuple + 1 # next tuple
-        i = i + 1
-        rows[tupleIndice] = tuple(l) #insert the list as tuple
-        tupleIndice = tupleIndice + 1
+    #adapt rgba as list of tuple
+    list_t = []
+    tmp = []
+    for i in range(0, len(rgba)):
+        tmp.append(rgba[i])
+        if (len(tmp) == w * 4 and i != 0):
+            list_t.append(tuple(tmp))
+            tmp.clear()
+
     w = png.Writer(w, h, greyscale = False, alpha = True)
-    f = open(image_output, 'wb')
-    w.write(f, adapt_rows(rows))
+    f = open(pic, 'wb')
+    w.write(f, list_t)
     f.close()
 
 
 
-def decode(redP):
+def decode(pixels):
     '''
     Decode text from image
     (list) --> text
-    :param redP: list
+    :param pixels: list
     :return Text: str
     '''
 
     i = 0
-    NewList = []
+    List = []
     StringB = ''
-    while i < len(redP):
-        NewList.append(redP[i : i+8])
+    while i < len(pixels):
+        List.append(pixels[i : i+8])
         i = i + 8
     values = []
     '''
@@ -136,7 +117,7 @@ def decode(redP):
     insert 8 values that contain a possible non-pair
     '''
 
-    for e in NewList:
+    for e in List:
         if (any(n % 2 == 1 for n in e)):
             values.append(e)
         else:
@@ -150,39 +131,38 @@ def decode(redP):
 
 if __name__ == "__main__":
 
-    # Image default image output and inputpath
-    image_input = "imageTest.png"
-    image_output = "imageTestNew.png"
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-w", '--write', action='store_true')
+    parser.add_argument("-f", '--image')
+    parser.add_argument("-t", '--text')
+    parser.add_argument('output')
+    args = parser.parse_args()
 
+    if args.write:
+        if args.image and args.text:
+            image = args.image
+            text = args.text
+        else:
+            image = input("Set PNG path: ")
+            text = input("Enter your text: ")
 
-    #
-    rows, width, height, redPix = read_png(image_output)
-    #print('--->',height,height)
-    reduction_pixel = pix_reduction(redPix)
-    print("red pixels adapted: ",reduction_pixel)
+        # extract PNG params
+        rows ,width, height, RGBA = read_png(image)
 
+        # Convert text to binary
+        binaryText = convert_text_to_Bin(text)
 
-    # convert text to binary
-    textBinary = convert_text_to_Bin('behind enemy lines')
-    print("binary text: ", textBinary)
+        # Encode
+        RGBAreduced = pix_reduction(RGBA)
 
+        pixelEncoded = encode(RGBAreduced, binaryText)
 
-    # encode: add red_pixels to binary text
-    textbin = []
-    #print("mm", textBinary)
-    redPixels_adjusted = encode(reduction_pixel, textBinary)
-    print("new binary text: ",redPixels_adjusted)
+        # Insert new params to PNG file
+        insert_pixels(width, height, pixelEncoded, args.output)
 
-
-    # adaption
-    rows_adapted = adapt_rows(rows)
-    print('format in tuples:', rows_adapted[0])
-
-
-    # insert red_pixels encoded in rows and generat new image
-    final_rows =  insert_red_pixels(width, height,redPixels_adjusted, rows_adapted)
-
-    #
-    rows, width, height, redPix = read_png(image_output)
-    #print("red_pixels",redPix)
-    print('>',decode(redPix))
+    if not args.write:
+        # encode image
+        width1, height1, rows1, RGBA1 = read_png(args.output)
+        decodeP = decode(RGBA1)
+        print("Text decoded from the picture:",decodeP)
