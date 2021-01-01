@@ -21,5 +21,5 @@ $  python3 main.py -w image.png
 - Mode read:
 
 ```console 
-    python3 main.py image.png
+$ python3 main.py image.png
 ``` 
